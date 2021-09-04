@@ -7,7 +7,7 @@ Wants=network-online.target
 Restart=always
 RestartSec=1
 
-ExecStart=/usr/bin/env PATH=CHIA_PATH/venv/bin:$PATH python3 EXPORTER_PATH/chia-exporter.py -p FULLNODE -w WALLET -a HARVESTER -r FARMER -p PORT
+ExecStart=/usr/bin/env PATH=CHIA_PATH/venv/bin:$PATH python3 EXPORTER_PATH/chia-exporter.py -f FULLNODE -w WALLET -a HARVESTER -r FARMER -p PORT
 User=CHIA_USER
 Group=CHIA_GROUP
 
