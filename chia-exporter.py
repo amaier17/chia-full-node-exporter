@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument("-w", "--wallet", default="localhost", help="Host machine for the Chia wallet RPC server")
     parser.add_argument("-a", "--harvester", default="localhost", help="Host machine for the Chia harvester RPC server")
     parser.add_argument("-r", "--farmer", default="localhost", help="Host machine for the Chia farmer RPC server")
-    parser.add_argument("-p", "--port", default=9825, help="Port to listen on for the exporter")
+    parser.add_argument("-p", "--port", default=9825, type=int, help="Port to listen on for the exporter")
 
     try:
         args = parser.parse_args()
