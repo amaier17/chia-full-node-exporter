@@ -112,13 +112,6 @@ async def run_metrics(fullnode, wallet, harvester, farmer):
         farmed_last_height = farmed_stat["last_height_farmed"]
         FARMED_LAST.set(farmed_last_height)
 
-        seconds = 0
-        if blockchain is not None and plots is not None:
-            proportion = (
-                plot_size_total / blockchain["space"] if blockchain["space"] else -1
-            )
-            seconds = int((average_block_time) / proportion) if proportion else -1
-        TIME_TO_WIN.set(seconds)
 
         # Farmer stuff
         all_harvesters = await client_farmer.get_harvesters()
@@ -136,6 +129,9 @@ async def run_metrics(fullnode, wallet, harvester, farmer):
 
         PLOTS_TOTAL.set(total_plots)
         PLOTS_SIZE.set(total_size)
+        proportion = total_size / netspace if netspace else -1
+        seconds = int(average_block_time) / proportion if proportion else -1
+        TIME_TO_WIN.set(seconds)
         reward_address = await client_farmer.get_reward_targets(False)
         REWARD_ADDRESS.info(
             {
