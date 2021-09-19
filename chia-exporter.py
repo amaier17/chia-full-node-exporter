@@ -69,7 +69,7 @@ async def run_metrics(fullnode, wallet, harvester, farmer):
         creds = ServiceAccountCredentials.from_json_keyfile_name('/opt/chia/ec-updater-ea96fd077e39.json', scope)
         client = gspread.authorize(creds)
         sheet = client.open("Eid-Chia Financials")
-        worksheet = sheet.get_worksheet(0)
+        worksheet = sheet.get_worksheet_by_id(234887479)
         spent_cad = float(worksheet.acell("N1", value_render_option="UNFORMATTED_VALUE").value)
         AMOUNT_SPENT_CAD.set(spent_cad)
         resp = json.loads(requests.get('https://api.exchangerate-api.com/v4/latest/CAD').text)
