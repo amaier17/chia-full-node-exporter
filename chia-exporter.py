@@ -1,6 +1,10 @@
 from prometheus_client import start_http_server, Gauge, Enum, Info
+from oauth2client.service_account import ServiceAccountCredentials
 import argparse
 import asyncio
+import gspread
+import json
+import requests
 import socket
 import time
 import os
@@ -15,6 +19,12 @@ from chia.cmds.netspace_funcs import netstorge_async as w
 from chia.cmds.farm_funcs import get_average_block_time
 
 NETSPACE = Gauge("chia_netspace_total", "Current total netspace")
+CURRENT_PRICE_USD = Gauge("chia_current_price_usd", "Current chia price USD from coingecko")
+CURRENT_PRICE_CAD = Gauge("chia_current_price_cad", "Current chia price CAD from coingecko")
+PRICE_CHANGE_24H_USD_PER = Gauge("chia_price_change_24h_usd", "Percentage change in price over 24h in USD from coingecko")
+PRICE_CHANGE_24H_CAD_PER = Gauge("chia_price_change_24h_cad", "Percentage change in price over 24h in CAD from coingecko")
+AMOUNT_SPENT_CAD = Gauge("ec_amount_spent_cad", "Amount of money spent in CAD")
+AMOUNT_SPENT_USD = Gauge("ec_amount_spent_usd", "Amount of money spent in USD")
 BLOCK_TIME = Gauge("chia_average_block_time", "Average time between blocks")
 HEIGHT = Gauge("chia_block_height", "Current highest block")
 SYNC_STATE = Enum("chia_sync_state", "Current sync state", states=["synced", "syncing"])
@@ -48,6 +58,24 @@ def parse_args():
 
 async def run_metrics(fullnode, wallet, harvester, farmer):
     try:
+        resp  = json.loads(requests.get('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=chia').text)
+        CURRENT_PRICE_USD.set(resp[0]["current_price"])
+        PRICE_CHANGE_24H_USD_PER.set(float(resp[0]["price_change_percentage_24h"]) / 100)
+        resp = json.loads(requests.get('https://api.coingecko.com/api/v3/coins/markets?vs_currency=cad&ids=chia').text)
+        CURRENT_PRICE_CAD.set(resp[0]["current_price"])
+        PRICE_CHANGE_24H_CAD_PER.set(float(resp[0]["price_change_percentage_24h"]) / 100)
+
+        scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_name('/opt/chia/ec-updater-ea96fd077e39.json', scope)
+        client = gspread.authorize(creds)
+        sheet = client.open("Eid-Chia Financials")
+        worksheet = sheet.get_worksheet(0)
+        spent_cad = float(worksheet.acell("N1", value_render_option="UNFORMATTED_VALUE").value)
+        AMOUNT_SPENT_CAD.set(spent_cad)
+        resp = json.loads(requests.get('https://api.exchangerate-api.com/v4/latest/CAD').text)
+        cad_usd_rate = resp["rates"]["USD"]
+        AMOUNT_SPENT_USD.set(spent_cad * cad_usd_rate)
+
         config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
         rpc_host = fullnode
         rpc_port = config["full_node"]["rpc_port"]
